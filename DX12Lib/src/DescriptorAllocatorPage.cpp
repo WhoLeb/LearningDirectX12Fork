@@ -6,13 +6,14 @@
 
 using namespace dx12lib;
 
-DescriptorAllocatorPage::DescriptorAllocatorPage( Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type,
+DescriptorAllocatorPage::DescriptorAllocatorPage( Microsoft::WRL::ComPtr<ID3D12Device>& device,
+                                                  D3D12_DESCRIPTOR_HEAP_TYPE type,
                                                   uint32_t numDescriptors )
 : m_Device( device )
 , m_HeapType( type )
 , m_NumDescriptorsInHeap( numDescriptors )
 {
-    auto d3d12Device = m_Device.GetD3D12Device();
+    auto d3d12Device = m_Device;
 
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
     heapDesc.Type                       = m_HeapType;

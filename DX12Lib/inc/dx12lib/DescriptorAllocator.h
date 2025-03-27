@@ -51,7 +51,6 @@ namespace dx12lib
 {
 
     class DescriptorAllocatorPage;
-class Device;
 
 class DescriptorAllocator
 {
@@ -69,12 +68,15 @@ public:
      */
     void ReleaseStaleDescriptors();
 
-protected:
-    friend class std::default_delete<DescriptorAllocator>;
-
+    // MY NOTE: Fuck that, made it public!
     // Can only be created by the Device.
-    DescriptorAllocator( Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorsPerHeap = 256 );
+    DescriptorAllocator( Microsoft::WRL::ComPtr<ID3D12Device>& device, D3D12_DESCRIPTOR_HEAP_TYPE type,
+                         uint32_t numDescriptorsPerHeap = 256 );
+
     virtual ~DescriptorAllocator();
+protected:
+    friend struct std::default_delete<DescriptorAllocator>;
+
 
 private:
     using DescriptorHeapPool = std::vector<std::shared_ptr<DescriptorAllocatorPage>>;
@@ -83,7 +85,8 @@ private:
     std::shared_ptr<DescriptorAllocatorPage> CreateAllocatorPage();
 
     // The device that was use to create this DescriptorAllocator.
-    Device&                    m_Device;
+    // MY NOTE: Changed it to be a regular ID3DDevice
+    Microsoft::WRL::ComPtr<ID3D12Device> m_Device;
     D3D12_DESCRIPTOR_HEAP_TYPE m_HeapType;
     uint32_t                   m_NumDescriptorsPerHeap;
 

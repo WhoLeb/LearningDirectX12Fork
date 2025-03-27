@@ -81,7 +81,7 @@ class MakeRootSignature : public RootSignature
 {
 public:
     MakeRootSignature( Device& device, const D3D12_ROOT_SIGNATURE_DESC1& rootSignatureDesc )
-    : RootSignature( device, rootSignatureDesc )
+    : RootSignature( ComPtr<ID3D12Device>(device.GetD3D12Device()), rootSignatureDesc )
     {}
 
     virtual ~MakeRootSignature() {}
@@ -172,7 +172,7 @@ class MakeDescriptorAllocator : public DescriptorAllocator
 {
 public:
     MakeDescriptorAllocator( Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorsPerHeap = 256 )
-    : DescriptorAllocator( device, type, numDescriptorsPerHeap )
+    : DescriptorAllocator( Microsoft::WRL::ComPtr<ID3D12Device>(device.GetD3D12Device()), type, numDescriptorsPerHeap )
     {}
 
     virtual ~MakeDescriptorAllocator() {}

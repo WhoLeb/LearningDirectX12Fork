@@ -48,7 +48,6 @@
 namespace dx12lib
 {
 
-class Device;
 
 class DescriptorAllocatorPage : public std::enable_shared_from_this<DescriptorAllocatorPage>
 {
@@ -87,7 +86,8 @@ public:
     void ReleaseStaleDescriptors();
 
 protected:
-    DescriptorAllocatorPage( Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors );
+    DescriptorAllocatorPage( Microsoft::WRL::ComPtr<ID3D12Device>& device, D3D12_DESCRIPTOR_HEAP_TYPE type,
+                             uint32_t numDescriptors );
     virtual ~DescriptorAllocatorPage() = default;
 
     // Compute the offset of the descriptor handle from the start of the heap.
@@ -139,7 +139,7 @@ private:
     };
 
     // Device that was used to create the descriptor heap.
-    Device& m_Device;
+    Microsoft::WRL::ComPtr<ID3D12Device>& m_Device;
 
     // Stale descriptors are queued for release until the frame that they were freed
     // has completed.
