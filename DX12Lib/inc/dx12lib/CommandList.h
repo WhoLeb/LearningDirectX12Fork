@@ -524,7 +524,10 @@ public:
 protected:
     friend class CommandQueue;
     friend class DynamicDescriptorHeap;
+
+#pragma warning(disable : 4099)
     friend class std::default_delete<CommandList>;
+#pragma warning(default : 4099)
 
     CommandList( Device& device, D3D12_COMMAND_LIST_TYPE type );
     virtual ~CommandList();

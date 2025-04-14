@@ -67,7 +67,9 @@ public:
     Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetD3D12CommandQueue() const;
 
 protected:
+#pragma warning(disable : 4099)
     friend class std::default_delete<CommandQueue>;
+#pragma warning(default : 4099)
 
     // Only the device can create command queues.
     CommandQueue( Device& device, D3D12_COMMAND_LIST_TYPE type );

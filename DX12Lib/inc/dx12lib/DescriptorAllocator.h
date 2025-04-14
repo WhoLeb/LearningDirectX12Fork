@@ -70,7 +70,9 @@ public:
     void ReleaseStaleDescriptors();
 
 protected:
+#pragma warning(disable : 4099)
     friend class std::default_delete<DescriptorAllocator>;
+#pragma warning(default : 4099)
 
     // Can only be created by the Device.
     DescriptorAllocator( Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptorsPerHeap = 256 );

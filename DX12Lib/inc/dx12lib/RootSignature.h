@@ -61,7 +61,9 @@ public:
     uint32_t GetNumDescriptors( uint32_t rootIndex ) const;
 
 protected:
+#pragma warning(disable : 4099)
     friend class std::default_delete<RootSignature>;
+#pragma warning(default : 4099)
 
     RootSignature( Device& device, const D3D12_ROOT_SIGNATURE_DESC1& rootSignatureDesc );
 
