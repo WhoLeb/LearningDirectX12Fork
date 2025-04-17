@@ -112,25 +112,58 @@ void Texture::CreateViews()
         CD3DX12_RESOURCE_DESC desc( m_d3d12Resource->GetDesc() );
 
         // Create RTV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) != 0 && CheckRTVSupport() )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) != 0 )
         {
-            m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
-            d3d12Device->CreateRenderTargetView( m_d3d12Resource.Get(), nullptr,
-                                                 m_RenderTargetView.GetDescriptorHandle() );
+            if (CheckRTVSupport())
+            {
+                m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+                d3d12Device->CreateRenderTargetView( m_d3d12Resource.Get(), nullptr,
+                                                     m_RenderTargetView.GetDescriptorHandle() );
+            }
         }
         // Create DSV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) != 0 && CheckDSVSupport() )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) != 0  )
         {
-            m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
-            d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), nullptr,
-                                                 m_DepthStencilView.GetDescriptorHandle() );
+            if (CheckDSVSupport())
+            {
+                m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
+                d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), nullptr,
+                                                     m_DepthStencilView.GetDescriptorHandle() );
+            }
+            else if (desc.Format == GetTypelessFormat(desc.Format))
+            {
+                m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
+                D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+                dsvDesc.Format                          = DXGI_FORMAT_D32_FLOAT;
+                dsvDesc.ViewDimension                   = D3D12_DSV_DIMENSION_TEXTURE2D;
+                dsvDesc.Flags                           = D3D12_DSV_FLAG_NONE;
+
+
+                d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), &dsvDesc,
+                                                   m_DepthStencilView.GetDescriptorHandle() );
+            }
         }
         // Create SRV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) == 0 && CheckSRVSupport() )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) == 0 )
         {
-            m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-            d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), nullptr,
+            if (CheckSRVSupport())
+            {
+                m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+                d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), nullptr,
                                                    m_ShaderResourceView.GetDescriptorHandle() );
+            }
+            else if (desc.Format == GetTypelessFormat(desc.Format))
+            {
+                m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+                D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+                srvDesc.Format                          = DXGI_FORMAT_R32_FLOAT;
+                srvDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2D;
+                srvDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+                srvDesc.Texture2D.MipLevels             = 1;
+
+                d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), &srvDesc,
+                                                   m_ShaderResourceView.GetDescriptorHandle() );
+            }
         }
         // Create UAV for each mip (only supported for 1D and 2D textures).
         if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ) != 0 && CheckUAVSupport() &&
@@ -360,6 +393,11 @@ DXGI_FORMAT Texture::GetTypelessFormat( DXGI_FORMAT format )
     case DXGI_FORMAT_R32_UINT:
     case DXGI_FORMAT_R32_SINT:
         typelessFormat = DXGI_FORMAT_R32_TYPELESS;
+        break;
+    case DXGI_FORMAT_D24_UNORM_S8_UINT:
+    case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
+    case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
+        typelessFormat = DXGI_FORMAT_R24G8_TYPELESS;
         break;
     case DXGI_FORMAT_R8G8_UNORM:
     case DXGI_FORMAT_R8G8_UINT:
