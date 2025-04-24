@@ -138,7 +138,6 @@ void Texture::CreateViews()
                 dsvDesc.ViewDimension                   = D3D12_DSV_DIMENSION_TEXTURE2D;
                 dsvDesc.Flags                           = D3D12_DSV_FLAG_NONE;
 
-
                 d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), &dsvDesc,
                                                    m_DepthStencilView.GetDescriptorHandle() );
             }
