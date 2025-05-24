@@ -112,57 +112,25 @@ void Texture::CreateViews()
         CD3DX12_RESOURCE_DESC desc( m_d3d12Resource->GetDesc() );
 
         // Create RTV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) != 0 )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) != 0 && CheckRTVSupport())
         {
-            if (CheckRTVSupport())
-            {
-                m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
-                d3d12Device->CreateRenderTargetView( m_d3d12Resource.Get(), nullptr,
-                                                     m_RenderTargetView.GetDescriptorHandle() );
-            }
+            m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+            d3d12Device->CreateRenderTargetView( m_d3d12Resource.Get(), nullptr,
+                                                 m_RenderTargetView.GetDescriptorHandle() );
         }
         // Create DSV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) != 0  )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) != 0 && CheckDSVSupport() )
         {
-            if (CheckDSVSupport())
-            {
-                m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
-                d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), nullptr,
-                                                     m_DepthStencilView.GetDescriptorHandle() );
-            }
-            else if (desc.Format == GetTypelessFormat(desc.Format))
-            {
-                m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
-                D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-                dsvDesc.Format                          = DXGI_FORMAT_D32_FLOAT;
-                dsvDesc.ViewDimension                   = D3D12_DSV_DIMENSION_TEXTURE2D;
-                dsvDesc.Flags                           = D3D12_DSV_FLAG_NONE;
-
-                d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), &dsvDesc,
-                                                   m_DepthStencilView.GetDescriptorHandle() );
-            }
+            m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
+            d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), nullptr,
+                                                 m_DepthStencilView.GetDescriptorHandle() );
         }
         // Create SRV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) == 0 )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) == 0 && CheckSRVSupport())
         {
-            if (CheckSRVSupport())
-            {
-                m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-                d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), nullptr,
-                                                   m_ShaderResourceView.GetDescriptorHandle() );
-            }
-            else if (desc.Format == GetTypelessFormat(desc.Format))
-            {
-                m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-                D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-                srvDesc.Format                          = DXGI_FORMAT_R32_FLOAT;
-                srvDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2D;
-                srvDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-                srvDesc.Texture2D.MipLevels             = 1;
-
-                d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), &srvDesc,
-                                                   m_ShaderResourceView.GetDescriptorHandle() );
-            }
+            m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+            d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), nullptr,
+                                               m_ShaderResourceView.GetDescriptorHandle() );
         }
         // Create UAV for each mip (only supported for 1D and 2D textures).
         if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ) != 0 && CheckUAVSupport() &&
@@ -511,4 +479,45 @@ DXGI_FORMAT Texture::GetUAVCompatableFormat( DXGI_FORMAT format )
     }
 
     return uavFormat;
+}
+
+void dx12lib::Texture::CreateRenderTargetView( const D3D12_RENDER_TARGET_VIEW_DESC* rtvDesc )
+{
+    if ( !m_d3d12Resource
+        || (m_d3d12Resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) == 0)
+        return;
+
+    auto d3d12device   = m_Device.GetD3D12Device();
+
+    m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+    d3d12device->CreateRenderTargetView( m_d3d12Resource.Get(), rtvDesc, m_RenderTargetView.GetDescriptorHandle() ); 
+}
+
+void dx12lib::Texture::CreateDepthStencilView( const D3D12_DEPTH_STENCIL_VIEW_DESC* dsvDesc )
+{
+    if ( !m_d3d12Resource
+        || (m_d3d12Resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) == 0)
+        return;
+
+    auto d3d12device   = m_Device.GetD3D12Device();
+
+    m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
+    d3d12device->CreateDepthStencilView( m_d3d12Resource.Get(), dsvDesc, m_DepthStencilView.GetDescriptorHandle() ); 
+}
+
+void dx12lib::Texture::CreateShaderResourceView( const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc )
+{
+    if ( !m_d3d12Resource
+        || (m_d3d12Resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) != 0)
+        return;
+
+    auto d3d12device   = m_Device.GetD3D12Device();
+
+    m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+    d3d12device->CreateShaderResourceView( m_d3d12Resource.Get(), srvDesc, m_ShaderResourceView.GetDescriptorHandle() ); 
+}
+
+void dx12lib::Texture::CreateUnorderedAccessView( const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc )
+{
+    assert( false && "This function is not implemented as i don't really understand what uavs are for" );
 }
