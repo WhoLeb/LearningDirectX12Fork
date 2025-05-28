@@ -116,10 +116,10 @@ public:
     static DXGI_FORMAT GetUAVCompatableFormat( DXGI_FORMAT format );
 
     // These functions are used to forcefully create views that you want
-    void CreateRenderTargetView(const D3D12_RENDER_TARGET_VIEW_DESC* rtvDesc = nullptr);
-    void CreateDepthStencilView(const D3D12_DEPTH_STENCIL_VIEW_DESC* dsvDesc = nullptr);
-    void CreateShaderResourceView(const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc = nullptr);
-    void CreateUnorderedAccessView(const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc = nullptr);
+    void CreateRenderTargetView(const std::shared_ptr<D3D12_RENDER_TARGET_VIEW_DESC>& rtvDesc = nullptr);
+    void CreateDepthStencilView(const std::shared_ptr<D3D12_DEPTH_STENCIL_VIEW_DESC>& dsvDesc = nullptr);
+    void CreateShaderResourceView(const std::shared_ptr<D3D12_SHADER_RESOURCE_VIEW_DESC>& srvDesc = nullptr);
+    void CreateUnorderedAccessView(const std::shared_ptr<D3D12_UNORDERED_ACCESS_VIEW_DESC>& uavDesc = nullptr);
 
 protected:
     Texture( Device& device, const D3D12_RESOURCE_DESC& resourceDesc, const D3D12_CLEAR_VALUE* clearValue = nullptr );
@@ -137,5 +137,10 @@ private:
     DescriptorAllocation m_DepthStencilView;
     DescriptorAllocation m_ShaderResourceView;
     DescriptorAllocation m_UnorderedAccessView;
+
+    std::shared_ptr<D3D12_RENDER_TARGET_VIEW_DESC> m_RenderTargetViewDesc = nullptr;
+    std::shared_ptr<D3D12_DEPTH_STENCIL_VIEW_DESC> m_DepthStencilViewDesc = nullptr;
+    std::shared_ptr<D3D12_SHADER_RESOURCE_VIEW_DESC> m_ShaderResourceViewDesc = nullptr;
+    std::shared_ptr<D3D12_UNORDERED_ACCESS_VIEW_DESC> m_UnorderedAccessViewDesc = nullptr;
 };
 }  // namespace dx12lib

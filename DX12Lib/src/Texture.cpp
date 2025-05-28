@@ -112,26 +112,29 @@ void Texture::CreateViews()
         CD3DX12_RESOURCE_DESC desc( m_d3d12Resource->GetDesc() );
 
         // Create RTV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) != 0 && CheckRTVSupport())
+        if ( (( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) != 0 && CheckRTVSupport()) || m_RenderTargetViewDesc)
         {
             m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
-            d3d12Device->CreateRenderTargetView( m_d3d12Resource.Get(), nullptr,
+            d3d12Device->CreateRenderTargetView( m_d3d12Resource.Get(), m_RenderTargetViewDesc.get(),
                                                  m_RenderTargetView.GetDescriptorHandle() );
         }
+            
         // Create DSV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) != 0 && CheckDSVSupport() )
+        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) != 0 && CheckDSVSupport() || m_DepthStencilViewDesc)
         {
             m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
-            d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), nullptr,
+            d3d12Device->CreateDepthStencilView( m_d3d12Resource.Get(), m_DepthStencilViewDesc.get(),
                                                  m_DepthStencilView.GetDescriptorHandle() );
         }
+        
         // Create SRV
-        if ( ( desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) == 0 && CheckSRVSupport())
+        if ( ( ( desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) == 0 && CheckSRVSupport() ) || m_ShaderResourceViewDesc)
         {
             m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-            d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), nullptr,
+            d3d12Device->CreateShaderResourceView( m_d3d12Resource.Get(), m_ShaderResourceViewDesc.get(),
                                                m_ShaderResourceView.GetDescriptorHandle() );
         }
+        
         // Create UAV for each mip (only supported for 1D and 2D textures).
         if ( ( desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS ) != 0 && CheckUAVSupport() &&
              desc.DepthOrArraySize == 1 )
@@ -481,7 +484,7 @@ DXGI_FORMAT Texture::GetUAVCompatableFormat( DXGI_FORMAT format )
     return uavFormat;
 }
 
-void dx12lib::Texture::CreateRenderTargetView( const D3D12_RENDER_TARGET_VIEW_DESC* rtvDesc )
+void dx12lib::Texture::CreateRenderTargetView( const std::shared_ptr<D3D12_RENDER_TARGET_VIEW_DESC>& rtvDesc )
 {
     if ( !m_d3d12Resource
         || (m_d3d12Resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET ) == 0)
@@ -490,10 +493,11 @@ void dx12lib::Texture::CreateRenderTargetView( const D3D12_RENDER_TARGET_VIEW_DE
     auto d3d12device   = m_Device.GetD3D12Device();
 
     m_RenderTargetView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
-    d3d12device->CreateRenderTargetView( m_d3d12Resource.Get(), rtvDesc, m_RenderTargetView.GetDescriptorHandle() ); 
+    d3d12device->CreateRenderTargetView( m_d3d12Resource.Get(), rtvDesc.get(), m_RenderTargetView.GetDescriptorHandle() );
+    m_RenderTargetViewDesc = rtvDesc;
 }
 
-void dx12lib::Texture::CreateDepthStencilView( const D3D12_DEPTH_STENCIL_VIEW_DESC* dsvDesc )
+void dx12lib::Texture::CreateDepthStencilView( const std::shared_ptr<D3D12_DEPTH_STENCIL_VIEW_DESC>& dsvDesc )
 {
     if ( !m_d3d12Resource
         || (m_d3d12Resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL ) == 0)
@@ -502,10 +506,11 @@ void dx12lib::Texture::CreateDepthStencilView( const D3D12_DEPTH_STENCIL_VIEW_DE
     auto d3d12device   = m_Device.GetD3D12Device();
 
     m_DepthStencilView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_DSV );
-    d3d12device->CreateDepthStencilView( m_d3d12Resource.Get(), dsvDesc, m_DepthStencilView.GetDescriptorHandle() ); 
+    d3d12device->CreateDepthStencilView( m_d3d12Resource.Get(), dsvDesc.get(), m_DepthStencilView.GetDescriptorHandle() );
+    m_DepthStencilViewDesc = dsvDesc;
 }
 
-void dx12lib::Texture::CreateShaderResourceView( const D3D12_SHADER_RESOURCE_VIEW_DESC* srvDesc )
+void dx12lib::Texture::CreateShaderResourceView( const std::shared_ptr<D3D12_SHADER_RESOURCE_VIEW_DESC>& srvDesc )
 {
     if ( !m_d3d12Resource
         || (m_d3d12Resource->GetDesc().Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE ) != 0)
@@ -514,10 +519,11 @@ void dx12lib::Texture::CreateShaderResourceView( const D3D12_SHADER_RESOURCE_VIE
     auto d3d12device   = m_Device.GetD3D12Device();
 
     m_ShaderResourceView = m_Device.AllocateDescriptors( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
-    d3d12device->CreateShaderResourceView( m_d3d12Resource.Get(), srvDesc, m_ShaderResourceView.GetDescriptorHandle() ); 
+    d3d12device->CreateShaderResourceView( m_d3d12Resource.Get(), srvDesc.get(), m_ShaderResourceView.GetDescriptorHandle() );
+    m_ShaderResourceViewDesc = srvDesc;
 }
 
-void dx12lib::Texture::CreateUnorderedAccessView( const D3D12_UNORDERED_ACCESS_VIEW_DESC* uavDesc )
+void dx12lib::Texture::CreateUnorderedAccessView( const std::shared_ptr<D3D12_UNORDERED_ACCESS_VIEW_DESC>& uavDesc )
 {
     assert( false && "This function is not implemented as i don't really understand what uavs are for" );
 }
